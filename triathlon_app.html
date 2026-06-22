@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="三鐵訓練">
+<meta name="theme-color" content="#0284c7">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230284c7'/><text y='.9em' font-size='72' x='50%' text-anchor='middle'>🏊</text></svg>">
+<title>三鐵訓練儀表板</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root{color-scheme:light;--bg:#f0f4f8;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--pri:#0284c7;--pril:#e0f2fe;--ora:#f97316;--orl:#fff7ed;--grn:#16a34a;--grnl:#f0fdf4;--yel:#ca8a04;--yell:#fefce8;--red:#dc2626;--redl:#fef2f2;--pur:#7c3aed;--purl:#f3e8ff;--r:12px;--sh:0 1px 3px rgba(0,0,0,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#0c4a6e,#0284c7,#0369a1);color:#fff;padding:14px 16px}
+.hdr-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.app-name{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.app-sub{font-size:11px;opacity:.75;margin-top:2px}
+.cd-box{text-align:right}
+.cd-label{font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.5px}
+.cd-days{font-size:28px;font-weight:900;line-height:1;margin-top:1px}
+.cd-units{display:flex;gap:8px;justify-content:flex-end;margin-top:3px}
+.cd-unit{text-align:center}
+.cd-val{font-size:14px;font-weight:700;display:block}
+.cd-lbl{font-size:9px;opacity:.7}
+.cd-date{font-size:11px;opacity:.8;margin-top:3px}
+
+/* PHASE STRIP */
+.pstrip{background:#fff;border-bottom:1px solid var(--border);padding:8px 14px}
+.prow{display:flex;gap:3px}
+.pi{flex:1;padding:4px 4px 3px;border-radius:7px;text-align:center;font-size:9px;font-weight:700;border:2px solid transparent;background:var(--bg);color:var(--muted);cursor:default}
+.pi.active{border-color:var(--pri);background:var(--pril);color:var(--pri)}
+.pi.done{background:#f1f5f9;color:#94a3b8}
+.pi-n{display:block;font-size:10px}
+.pi-d{display:block;font-size:8px;opacity:.7;margin-top:1px}
+.cycle-row{display:flex;gap:6px;align-items:center;margin-top:7px}
+.cycle-lbl{font-size:10px;color:var(--muted);white-space:nowrap}
+.cycle-weeks{display:flex;gap:3px;flex:1}
+.cw{flex:1;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:#e2e8f0;color:var(--muted);border:2px solid transparent}
+.cw.cur{background:var(--pri);color:#fff;border-color:#0369a1}
+.cw.rec{background:var(--yell);color:#78350f}
+.cw.rec.cur{background:var(--yel);color:#fff}
+.cycle-info{font-size:10px;color:var(--muted);margin-top:5px;text-align:right}
+.load-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;background:var(--pril);color:var(--pri)}
+.load-badge.rec{background:var(--yell);color:var(--yel)}
+
+/* MAIN */
+.main{padding:10px 14px 20px}
+
+/* TABS */
+.tabs{display:flex;background:#fff;border-radius:var(--r);padding:4px;gap:3px;box-shadow:var(--sh);margin-bottom:10px}
+.tab{flex:1;padding:7px 3px;border:none;background:none;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center}
+.tab.on{background:var(--pri);color:#fff}
+.tc{display:none}.tc.on{display:block}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--r);padding:13px;box-shadow:var(--sh);margin-bottom:9px}
+.card-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.card-t{font-size:13px;font-weight:700}
+.sec-t{font-size:14px;font-weight:800;margin-bottom:9px;display:flex;align-items:center;gap:5px}
+
+/* TRAINING CARD */
+.tcard{border-left:4px solid var(--pri);padding-left:11px}
+.tcard.swim{border-color:#0ea5e9}.tcard.bike{border-color:var(--ora)}.tcard.run{border-color:var(--grn)}.tcard.brick{border-color:var(--pur)}.tcard.rest-c{border-color:#94a3b8}
+.tc-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.tc-title{font-size:14px;font-weight:800}
+.tc-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px}
+.tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700}
+.tz1{background:#e0f2fe;color:#0369a1}.tz2{background:#dcfce7;color:#15803d}.tz3{background:#fef9c3;color:#92400e}.tz4{background:#fee2e2;color:#dc2626}.tz5{background:var(--purl);color:var(--pur)}.tdur{background:#f1f5f9;color:#475569}.thr{background:#fff0f0;color:#dc2626}
+.tc-desc{font-size:12px;color:var(--muted);line-height:1.55}
+.tc-kpi{margin-top:6px;font-size:11px;color:var(--pri);font-weight:700;background:var(--pril);padding:3px 8px;border-radius:6px;display:inline-block}
+.sesh-lbl{font-size:10px;font-weight:800;color:#fff;padding:2px 8px;border-radius:4px;margin-bottom:6px;display:inline-block}
+.sam{background:var(--ora)}.spm{background:var(--pur)}
+.rest-day{text-align:center;padding:22px;color:var(--muted)}
+.rest-icon{font-size:36px;margin-bottom:8px}
+.rest-text{font-size:14px;font-weight:700}
+.rest-sub{font-size:12px;margin-top:4px}
+.load-note{background:var(--yell);border:1px solid #fde68a;border-radius:8px;padding:8px 10px;font-size:11px;color:#78350f;margin-bottom:9px;font-weight:600}
+
+/* UPLOAD */
+.upload-area{border:2px dashed var(--border);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);margin-bottom:10px}
+.upload-area:hover,.upload-area.drag{border-color:var(--pri);background:var(--pril)}
+.upload-icon{font-size:28px;margin-bottom:6px}
+.upload-txt{font-size:13px;font-weight:700;color:var(--muted)}
+.upload-sub{font-size:11px;color:#94a3b8;margin-top:3px}
+.preview-img{width:100%;max-height:180px;object-fit:contain;background:#f8fafc;border-radius:var(--r);margin-bottom:10px;box-shadow:var(--sh);display:block}
+.ocr-loading{text-align:center;padding:14px;color:var(--pri);font-size:13px;font-weight:700}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--pril);border-top-color:var(--pri);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ocr-success{background:var(--grnl);border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;font-size:12px;color:#15803d;font-weight:700;margin-bottom:10px}
+.ocr-fail{background:var(--yell);border:1px solid #fde68a;border-radius:8px;padding:8px 10px;font-size:12px;color:#78350f;font-weight:700;margin-bottom:10px}
+
+/* FORM */
+.fg{margin-bottom:9px}
+.fl{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;display:block}
+.fi{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:#fff}
+.fi:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px var(--pril)}
+.frow{display:flex;gap:8px}.frow .fg{flex:1}
+.btn{padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.btn-pri{background:var(--pri);color:#fff;width:100%}
+.btn-pri:hover{background:#0369a1}
+.btn-sm{font-size:11px;padding:4px 9px;border-radius:5px}
+.btn-del{background:var(--red);color:#fff}
+.btn-sec{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.btn-row{display:flex;gap:8px;margin-bottom:10px}
+.btn-row .btn{flex:1}
+
+/* HISTORY TABLE */
+.filter-row{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--muted);transition:all .15s}
+.chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.log-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.log-tbl th{background:var(--bg);padding:7px 7px;text-align:left;font-weight:700;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)}
+.log-tbl td{padding:7px 7px;border-bottom:1px solid var(--border);vertical-align:middle}
+.log-tbl tr:hover td{background:#fafbfc}
+.log-tbl tr:last-child td{border-bottom:none}
+.tbadge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700}
+.ts{background:#e0f2fe;color:#0369a1}.tb{background:var(--orl);color:#c2410c}.tr{background:#dcfce7;color:#15803d}.tbr{background:var(--purl);color:var(--pur)}
+.empty{text-align:center;padding:28px;color:var(--muted)}
+.empty-icon{font-size:32px;margin-bottom:6px}
+.empty-txt{font-size:13px;font-weight:700}
+.empty-sub{font-size:11px;margin-top:3px}
+
+/* CHARTS */
+.chart-wrap{position:relative;height:170px;margin-top:6px}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
+.mc{background:#fff;border-radius:10px;padding:11px;box-shadow:var(--sh)}
+.mc-lbl{font-size:10px;color:var(--muted);margin-bottom:2px}
+.mc-val{font-size:20px;font-weight:900;line-height:1}
+.mc-sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* GAP ANALYSIS */
+.gap-grid{display:grid;grid-template-columns:1fr;gap:7px}
+.gap-row{background:#fff;border-radius:10px;padding:10px;box-shadow:var(--sh)}
+.gap-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.gap-metric{font-size:12px;font-weight:800}
+.gap-vals{display:flex;gap:10px;align-items:baseline;margin-bottom:5px}
+.gap-cur{font-size:16px;font-weight:900}
+.gap-arr{color:var(--muted);font-size:14px}
+.gap-tgt{font-size:14px;font-weight:700;color:var(--pri)}
+.gap-unit{font-size:10px;color:var(--muted)}
+.gap-pct{font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px}
+.gap-ok{background:var(--grnl);color:var(--grn)}.gap-ng{background:var(--redl);color:var(--red)}.gap-mid{background:var(--yell);color:var(--yel)}
+.pb-bg{height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+.pb-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.pb-swim{background:#0ea5e9}.pb-bike{background:var(--ora)}.pb-run{background:var(--grn)}.pb-t{background:var(--pur)}
+
+/* TRANSITION BOX */
+.t-box{background:linear-gradient(135deg,var(--orl),var(--yell));border:1px solid #fed7aa;border-radius:var(--r);padding:11px;margin-bottom:9px}
+.t-box-t{font-size:11px;font-weight:800;color:#92400e;margin-bottom:7px}
+.t-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.t-lbl{font-size:11px;color:#78350f;font-weight:600}
+.t-val{font-size:14px;font-weight:900;color:#c2410c}
+.t-best{font-size:11px;color:var(--grn);font-weight:700}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;z-index:999;animation:slideUp .3s ease;box-shadow:0 4px 12px rgba(0,0,0,.2);pointer-events:none}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ALERT */
+.alert{padding:9px 11px;border-radius:8px;font-size:12px;margin-bottom:9px;font-weight:600}
+.alert-info{background:var(--pril);color:#0369a1;border:1px solid #bae6fd}
+
+/* Hidden file input */
+#file-input{display:none}
+
+/* Section divider */
+.sdiv{display:flex;align-items:center;gap:8px;margin:12px 0 9px}
+.sdiv-line{flex:1;height:1px;background:var(--border)}
+.sdiv-txt{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-row">
+    <div>
+      <div class="app-name">🏊‍♀️🚴‍♀️🏃‍♀️ 三鐵訓練儀表板</div>
+      <div class="app-sub">陳玉翎｜CT 2027 ‧ 51.5km</div>
+    </div>
+    <div class="cd-box">
+      <div class="cd-label">距離比賽</div>
+      <div class="cd-days" id="cd-days">—</div>
+      <div class="cd-units">
+        <div class="cd-unit"><span class="cd-val" id="cd-h">—</span><span class="cd-lbl">時</span></div>
+        <div class="cd-unit"><span class="cd-val" id="cd-m">—</span><span class="cd-lbl">分</span></div>
+        <div class="cd-unit"><span class="cd-val" id="cd-s">—</span><span class="cd-lbl">秒</span></div>
+      </div>
+      <div class="cd-date">🏆 2027/04/25</div>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE STRIP -->
+<div class="pstrip">
+  <div class="prow">
+    <div class="pi" id="ph1"><span class="pi-n">基礎期</span><span class="pi-d">8/1–9/30</span></div>
+    <div class="pi" id="ph2"><span class="pi-n">建構一</span><span class="pi-d">10/1–11/30</span></div>
+    <div class="pi" id="ph3"><span class="pi-n">建構二</span><span class="pi-d">12/1–1/31</span></div>
+    <div class="pi" id="ph4"><span class="pi-n">密集期</span><span class="pi-d">2/1–3/31</span></div>
+    <div class="pi" id="ph5"><span class="pi-n">減量期</span><span class="pi-d">4/1–4/24</span></div>
+  </div>
+  <div class="cycle-row">
+    <span class="cycle-lbl">4週循環：</span>
+    <div class="cycle-weeks">
+      <div class="cw" id="cw1">W1<br><span style="font-size:9px">100%</span></div>
+      <div class="cw" id="cw2">W2<br><span style="font-size:9px">+10%</span></div>
+      <div class="cw" id="cw3">W3<br><span style="font-size:9px">+15%</span></div>
+      <div class="cw rec" id="cw4">W4<br><span style="font-size:9px">恢復</span></div>
+    </div>
+    <span class="load-badge" id="load-badge">—</span>
+  </div>
+  <div class="cycle-info" id="cycle-info">—</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab(0)">📅 今日課表</button>
+    <button class="tab" onclick="switchTab(1)">📝 記錄訓練</button>
+    <button class="tab" onclick="switchTab(2)">📚 訓練日誌</button>
+    <button class="tab" onclick="switchTab(3)">📊 成果分析</button>
+  </div>
+
+  <!-- TAB 0: TODAY -->
+  <div class="tc on" id="tc0">
+    <div id="today-content"></div>
+  </div>
+
+  <!-- TAB 1: LOG -->
+  <div class="tc" id="tc1">
+    <div class="sec-t">📝 記錄訓練</div>
+    <div class="alert alert-info">上傳 Garmin 截圖，AI 自動辨識填入訓練數據</div>
+
+    <!-- Upload -->
+    <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()"
+         ondragover="e=>{e.preventDefault();this.classList.add('drag')}"
+         ondragleave="()=>this.classList.remove('drag')"
+         ondrop="handleDrop(event)">
+      <div class="upload-icon">📸</div>
+      <div class="upload-txt">點擊或拖放 Garmin 截圖</div>
+      <div class="upload-sub">支援 PNG / JPG｜AI 自動辨識訓練數據</div>
+    </div>
+    <input type="file" id="file-input" accept="image/*" onchange="handleFile(this.files[0])">
+
+    <div id="preview-area"></div>
+    <div id="ocr-status"></div>
+
+    <!-- Form -->
+    <div class="card">
+      <div class="card-hd"><div class="card-t">訓練資料</div></div>
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">日期</label>
+          <input type="date" class="fi" id="f-date" value="">
+        </div>
+        <div class="fg">
+          <label class="fl">項目</label>
+          <select class="fi" id="f-type">
+            <option value="swim">🏊 游泳</option>
+            <option value="bike">🚴 騎車</option>
+            <option value="run">🏃 跑步</option>
+            <option value="brick">🔀 磚塊</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">時段</label>
+          <select class="fi" id="f-session">
+            <option value="single">單練</option>
+            <option value="am">早練 AM</option>
+            <option value="pm">晚練 PM</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">距離</label>
+          <input type="text" class="fi" id="f-dist" placeholder="e.g. 1500m / 40km">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">時間（分鐘）</label>
+          <input type="number" class="fi" id="f-dur" placeholder="e.g. 60">
+        </div>
+        <div class="fg">
+          <label class="fl">平均心率</label>
+          <input type="number" class="fi" id="f-hr" placeholder="bpm">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">配速 / 均速</label>
+          <input type="text" class="fi" id="f-pace" placeholder="e.g. 2:45/100m">
+        </div>
+        <div class="fg">
+          <label class="fl">卡路里</label>
+          <input type="number" class="fi" id="f-cal" placeholder="kcal">
+        </div>
+      </div>
+
+      <!-- Transition times (for transition practice logs) -->
+      <div class="sdiv"><div class="sdiv-line"></div><div class="sdiv-txt">換項計時（選填）</div><div class="sdiv-line"></div></div>
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">T1 換項（秒）</label>
+          <input type="number" class="fi" id="f-t1" placeholder="e.g. 150">
+        </div>
+        <div class="fg">
+          <label class="fl">T2 換項（秒）</label>
+          <input type="number" class="fi" id="f-t2" placeholder="e.g. 104">
+        </div>
+      </div>
+
+      <div class="fg">
+        <label class="fl">備註</label>
+        <input type="text" class="fi" id="f-notes" placeholder="感覺、天氣、裝備等">
+      </div>
+      <button class="btn btn-pri" onclick="saveLog()">💾 儲存訓練紀錄</button>
+    </div>
+  </div>
+
+  <!-- TAB 2: HISTORY -->
+  <div class="tc" id="tc2">
+    <div class="sec-t">📚 訓練日誌</div>
+    <div class="filter-row">
+      <button class="chip on" onclick="setFilter('all',this)">全部</button>
+      <button class="chip" onclick="setFilter('swim',this)">🏊 游泳</button>
+      <button class="chip" onclick="setFilter('bike',this)">🚴 騎車</button>
+      <button class="chip" onclick="setFilter('run',this)">🏃 跑步</button>
+      <button class="chip" onclick="setFilter('brick',this)">🔀 磚塊</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div id="log-table-wrap"></div>
+    </div>
+  </div>
+
+  <!-- TAB 3: ANALYSIS -->
+  <div class="tc" id="tc3">
+    <div class="sec-t">📊 成果分析</div>
+
+    <!-- Race countdown summary -->
+    <div class="metric-grid">
+      <div class="mc"><div class="mc-lbl">游泳訓練次數</div><div class="mc-val" id="m-swim">—</div><div class="mc-sub">目標：每週2次</div></div>
+      <div class="mc"><div class="mc-lbl">騎車訓練次數</div><div class="mc-val" id="m-bike">—</div><div class="mc-sub">目標：每週2-3次</div></div>
+      <div class="mc"><div class="mc-lbl">跑步訓練次數</div><div class="mc-val" id="m-run">—</div><div class="mc-sub">目標：每週3次</div></div>
+      <div class="mc"><div class="mc-lbl">總訓練次數</div><div class="mc-val" id="m-total">—</div><div class="mc-sub">自 8/1 起</div></div>
+    </div>
+
+    <!-- Transition tracker -->
+    <div class="t-box">
+      <div class="t-box-t">⚡ 換項計時追蹤（最大改善點）</div>
+      <div class="t-row"><span class="t-lbl">T1 最新紀錄</span><span class="t-val" id="t1-latest">未記錄</span><span class="t-best" id="t1-best"></span></div>
+      <div class="t-row"><span class="t-lbl">T2 最新紀錄</span><span class="t-val" id="t2-latest">未記錄</span><span class="t-best" id="t2-best"></span></div>
+      <div class="t-row"><span class="t-lbl">2024 普悠瑪</span><span style="font-size:12px;color:#92400e;font-weight:700">T1: 8:09 ｜ T2: 8:44</span></div>
+      <div class="t-row"><span class="t-lbl">CT 目標</span><span style="font-size:12px;color:var(--grn);font-weight:700">T1: &lt;2:30 ｜ T2: &lt;1:30</span></div>
+    </div>
+
+    <!-- Performance gap analysis -->
+    <div class="card">
+      <div class="card-hd"><div class="card-t">🎯 成績差距分析</div><div style="font-size:11px;color:var(--muted)">現況 → CT目標</div></div>
+      <div class="gap-grid" id="gap-grid"></div>
+    </div>
+
+    <!-- Swim chart -->
+    <div class="card">
+      <div class="card-hd"><div class="card-t">🏊 游泳配速趨勢</div><div style="font-size:11px;color:var(--muted)">min/100m（越低越好）</div></div>
+      <div class="chart-wrap"><canvas id="chart-swim"></canvas></div>
+    </div>
+
+    <!-- Bike chart -->
+    <div class="card">
+      <div class="card-hd"><div class="card-t">🚴 騎車速度趨勢</div><div style="font-size:11px;color:var(--muted)">km/h（越高越好）</div></div>
+      <div class="chart-wrap"><canvas id="chart-bike"></canvas></div>
+    </div>
+
+    <!-- Run chart -->
+    <div class="card">
+      <div class="card-hd"><div class="card-t">🏃 跑步配速趨勢</div><div style="font-size:11px;color:var(--muted)">min/km（越低越好）</div></div>
+      <div class="chart-wrap"><canvas id="chart-run"></canvas></div>
+    </div>
+
+    <!-- HR distribution -->
+    <div class="card">
+      <div class="card-hd"><div class="card-t">❤️ 心率區間分佈</div><div style="font-size:11px;color:var(--muted)">本期訓練</div></div>
+      <div class="chart-wrap"><canvas id="chart-hr"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const RACE_DATE = new Date('2027-04-25T07:00:00');
+const TRAIN_START = new Date('2026-08-01');
+const HRMAX = 210;
+
+const PHASES = [
+  {id:1,name:'基礎期',start:'2026-08-01',end:'2026-09-30',single:true},
+  {id:2,name:'建構期一',start:'2026-10-01',end:'2026-11-30',single:false},
+  {id:3,name:'建構期二',start:'2026-12-01',end:'2027-01-31',single:false},
+  {id:4,name:'密集特化',start:'2027-02-01',end:'2027-03-31',single:false},
+  {id:5,name:'減量期',start:'2027-04-01',end:'2027-04-24',single:false},
+];
+
+// Load factors [W1, W2, W3, W4]
+const LOAD = [1.0, 1.1, 1.15, 0.7];
+const LOAD_LABEL = ['基礎量 100%', '加量 +10%', '高峰 +15%', '🔵 恢復週 -30%'];
+
+// Schedule: phase → weekday (0=Mon…6=Sun) → session(s)
+// Each session: {type, label, zone, hr, dur (base min), desc, kpi}
+// Double days: {am:{...}, pm:{...}}
+const SCH = {
+1:{
+  0:null,
+  1:{t:'run',l:'🏃 跑步',z:'Z2',hr:'138–158bpm',d:50,desc:'輕鬆跑 8:00–8:30/km，心率保持 Z2。結尾 4×100m 放鬆跨步',kpi:'心率全程 <158'},
+  2:{t:'swim',l:'🏊 游泳',z:'Z2',hr:'138–158bpm',d:60,desc:'技術課（轉體、抓水）+ 6×150m Z2。⚠️ 主動讓心率進 138+，告別純Z1慢游',kpi:'均配速目標 <3:10/100m'},
+  3:{t:'bike',l:'🚴 騎車',z:'Z2–Z3',hr:'138–172bpm',d:75,desc:'⚠️ 強度提升！均速目標 22–24 km/h，不只是輕鬆踩。踏頻 85–90rpm',kpi:'均速 ≥22 km/h'},
+  4:{t:'swim',l:'🏊 游泳+換項',z:'Z2',hr:'138–158bpm',d:65,desc:'10min熱身 + 1000m連續計時（目標 <30min）+ 出水換跑鞋 T1 計時',kpi:'T1計時 <5:00，記錄秒數'},
+  5:{t:'bike',l:'🚴 長騎+T2',z:'Z2',hr:'138–158bpm',d:110,desc:'⚠️ 距離優先！目標 35–40km，均速 22 km/h。騎完 T2 換跑鞋計時（記錄秒數）',kpi:'長騎距離 ≥35km'},
+  6:{t:'run',l:'🏃 長跑',z:'Z2',hr:'138–158bpm',d:65,desc:'目標 8–9km，全程 Z2 不超速，培養脂肪燃燒效率',kpi:'完成 ≥8km，心率 <158'},
+},
+2:{
+  0:null,
+  1:{am:{t:'swim',l:'🏊 游泳技術 AM',z:'Z2',hr:'138–158bpm',d:45,desc:'技術課 + 6×100m Z2（心率進Z2）',kpi:'心率 138-158'},pm:{t:'run',l:'🏃 跑步閾值 PM',z:'Z4',hr:'172–187bpm',d:55,desc:'10min Z2熱身 + 4×1000m Z4（172–187bpm，目標 5:50–6:10/km），2:30休 + 緩和',kpi:'⚡ Z4首次：心率達 172+'}},
+  2:{am:{t:'run',l:'🏃 活化跑 AM',z:'Z1',hr:'<138bpm',d:30,desc:'輕鬆活化，心率<138',kpi:'輕鬆完成'},pm:{t:'bike',l:'🚴 騎車Z3 PM',z:'Z3',hr:'158–172bpm',d:85,desc:'Z2底 + 中段 3×10min Z3（158–172bpm），均速目標 24–26 km/h',kpi:'均速 ≥24 km/h'}},
+  3:{am:{t:'swim',l:'🏊 游泳閾值 AM',z:'Z4',hr:'172–187bpm',d:60,desc:'15min熱身 + ⚡ 4×200m Z4（172–187bpm），45秒休 + 緩和',kpi:'游泳首次Z4！心率達 172+'},pm:{t:'bike',l:'🚴 踏頻課 PM',z:'Z2',hr:'138–158bpm',d:50,desc:'平路踏頻 90–95rpm，Z2輕鬆騎，神經效率訓練',kpi:'踏頻 ≥90rpm'}},
+  4:{am:{t:'run',l:'🏃 輕鬆跑 AM',z:'Z1',hr:'<138bpm',d:30,desc:'恢復跑，輕鬆',kpi:'完成'},pm:{t:'swim',l:'🏊 1500m連續 PM',z:'Z2–Z3',hr:'138–172bpm',d:70,desc:'耐力組 + 1500m連續不停計時（目標 <42min）+ 換項演練',kpi:'1500m <42min，記錄時間'}},
+  5:{am:{t:'bike',l:'🚴 長騎 AM',z:'Z2',hr:'138–158bpm',d:140,desc:'⚠️ 目標 55–60km！均速 23–25 km/h，含 2×15min Z3',kpi:'長騎距離 ≥55km'},pm:{t:'run',l:'🏃 磚塊跑 PM',z:'Z2',hr:'138–158bpm',d:30,desc:'⚡ 首次磚塊！騎後 <2min換跑，Z2 磚塊跑',kpi:'換項 <2min'}},
+  6:{pm:{t:'run',l:'🏃 長跑',z:'Z2',hr:'138–158bpm',d:85,desc:'目標 10km，配速 8:00–8:30/km，全程 Z2',kpi:'距離 ≥10km'}},
+},
+3:{
+  0:null,
+  1:{am:{t:'swim',l:'🏊 游泳 AM',z:'Z2',hr:'138–158bpm',d:55,desc:'有氧耐力泳 8×150m Z2',kpi:'心率Z2'},pm:{t:'run',l:'🏃 跑步LT強化 PM',z:'Z4',hr:'172–187bpm',d:70,desc:'2km Z2 + 4×1.5km Z4（5:45–6:10/km），2min休 + 緩和',kpi:'LT配速 <6:10/km'}},
+  2:{am:{t:'run',l:'🏃 輕鬆跑 AM',z:'Z1',hr:'<138bpm',d:35,desc:'恢復跑',kpi:'完成'},pm:{t:'bike',l:'🚴 騎車LT PM',z:'Z4',hr:'172–187bpm',d:100,desc:'⚡ 騎車首次Z4！15min熱身 + 4×10min Z4（172–187bpm，28–30km/h），5min Z2休',kpi:'Z4均速 ≥28 km/h'}},
+  3:{am:{t:'swim',l:'🏊 游泳VO2max AM',z:'Z5',hr:'187–200bpm',d:65,desc:'⚡ 6×100m Z5（187–200bpm），90秒休。感受最高換氣強度',kpi:'心率達 187+'},pm:{t:'run',l:'🏃 恢復跑 PM',z:'Z1–Z2',hr:'<158bpm',d:40,desc:'輕鬆恢復跑 Z1–Z2',kpi:'輕鬆完成'}},
+  4:{am:{t:'bike',l:'🚴 恢復騎 AM',z:'Z1',hr:'<138bpm',d:45,desc:'輕鬆恢復騎',kpi:'完成'},pm:{t:'swim',l:'🏊 1500m計時 PM',z:'Z2–Z3',hr:'138–172bpm',d:75,desc:'耐力泳 + 1500m連續計時（目標 <38min）+ 換項演練',kpi:'1500m <38min'}},
+  5:{am:{t:'bike',l:'🚴 長騎 AM',z:'Z2–Z3',hr:'138–172bpm',d:165,desc:'⚠️ 目標 70km！含 3×15min Z3（25–27km/h）',kpi:'長騎 ≥70km'},pm:{t:'run',l:'🏃 磚塊跑 PM',z:'Z3',hr:'158–172bpm',d:40,desc:'磚塊跑 Z3（6:30–7:00/km）',kpi:'配速 <7:00/km'}},
+  6:{pm:{t:'run',l:'🏃 長跑',z:'Z2–Z3',hr:'138–172bpm',d:95,desc:'Z2底 + 每5km加速 1km Z3（6:30–7:00/km）',kpi:'完成'}},
+},
+4:{
+  0:null,
+  1:{am:{t:'swim',l:'🏊 游泳比賽配速 AM',z:'Z3–Z4',hr:'158–187bpm',d:70,desc:'3×400m Z3–Z4（158–187bpm），90秒休 + 出水T1換跑鞋計時（目標 <2min）',kpi:'T1 <2:00！記錄秒數'},pm:{t:'run',l:'🏃 穩速跑 PM',z:'Z3',hr:'158–172bpm',d:55,desc:'穩速跑 6:30–7:00/km，Z3',kpi:'配速 <7:00/km'}},
+  2:{am:{t:'run',l:'🏃 輕鬆跑 AM',z:'Z1',hr:'<138bpm',d:35,desc:'恢復跑',kpi:'完成'},pm:{t:'bike',l:'🚴 騎車VO2max PM',z:'Z4–Z5',hr:'172–200bpm',d:95,desc:'5×8min Z4–Z5（172–200bpm），4min Z2休',kpi:'心率達 Z4-Z5'}},
+  3:{am:{t:'swim',l:'🏊 游泳 AM',z:'Z2–Z3',hr:'138–172bpm',d:55,desc:'有氧耐力泳',kpi:'Z2–Z3'},pm:{t:'brick',l:'🔀 磚塊 PM',z:'Z2–Z3',hr:'138–172bpm',d:85,desc:'騎車60min Z2 → T2計時（目標 <1:30）→ 磚塊跑25min Z3（6:45–7:00/km）',kpi:'T2 <1:30！記錄秒數'}},
+  4:{am:{t:'run',l:'🏃 輕鬆跑 AM',z:'Z1',hr:'<138bpm',d:30,desc:'恢復跑',kpi:'完成'},pm:{t:'swim',l:'🏊 1500m賽況模擬 PM',z:'Z3–Z4',hr:'158–187bpm',d:70,desc:'⚡ 1500m連續計時（目標 <37min，比賽配速）',kpi:'1500m <37min'}},
+  5:{am:{t:'bike',l:'🚴 長騎 AM',z:'Z2–Z3',hr:'138–172bpm',d:165,desc:'長騎165min Z2–Z3 → T2換項計時',kpi:'距離 ≥70km，T2計時'},pm:{t:'run',l:'🏃 主磚塊跑 PM',z:'Z3',hr:'158–172bpm',d:50,desc:'磚塊跑50min Z3（6:45–7:00/km）',kpi:'配速 <7:00/km'}},
+  6:{pm:{t:'run',l:'🏃 長跑',z:'Z2–Z3',hr:'138–172bpm',d:105,desc:'Z2底 + 後25min Z3（6:30–7:00/km）',kpi:'完成'}},
+},
+5:{
+  0:null,
+  1:{t:'swim',l:'🏊 輕鬆泳',z:'Z1–Z2',hr:'<158bpm',d:25,desc:'輕鬆游泳保持感覺',kpi:'完成'},
+  2:{t:'run',l:'🏃 輕鬆跑',z:'Z1–Z2',hr:'<158bpm',d:25,desc:'輕鬆跑保持腳感',kpi:'完成'},
+  3:{t:'bike',l:'🚴 輕鬆騎',z:'Z1–Z2',hr:'<158bpm',d:25,desc:'輕鬆騎保持腳感',kpi:'完成'},
+  4:null,
+  5:{t:'swim',l:'🏊 短間歇',z:'Z2–Z4',hr:'<187bpm',d:20,desc:'4×100m Z4 短間歇，維持神經激活',kpi:'Z4感受'},
+  6:null,
+},
+};
+
+// Targets
+const TARGETS={
+  swim:{pace:2.4,t1500:36},
+  bike:{speed:27.5,t40:87},
+  run:{pace:6.5,t10:65},
+  t1:150, t2:90,
+  total:195
+};
+
+// Baselines (from historical data)
+const BASELINE={
+  swim:{pace:2.97,t1500:44.5},
+  bike:{speed:16.8,t40:143},
+  run:{pace:6.27,t10:62.7},
+  t1:489, t2:524
+};
+
+// ===================== UTILS =====================
+const LS_KEY='tri_log_v1';
+function loadLogs(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch{return []}}
+function saveLogs(d){localStorage.setItem(LS_KEY,JSON.stringify(d))}
+function fmt2(n){return String(Math.floor(n)).padStart(2,'0')}
+function dateStr(d){return d.toISOString().slice(0,10)}
+function today(){return dateStr(new Date())}
+function getPhase(dt){
+  const d=new Date(dt);
+  for(const p of PHASES){if(d>=new Date(p.start)&&d<=new Date(p.end))return p;}
+  return null;
+}
+function getWeekInCycle(dt){
+  const d=new Date(dt), s=TRAIN_START;
+  const wk=Math.floor((d-s)/(7*86400000));
+  return Math.max(0,wk)%4+1;
+}
+function getLoadFactor(w){return LOAD[w-1]||1.0;}
+function getWeekday(dt){
+  // 0=Mon,1=Tue,...,6=Sun
+  const d=new Date(dt);
+  return (d.getDay()+6)%7;
+}
+function zoneTag(z){
+  const m={Z1:'tz1',Z2:'tz2',Z3:'tz3',Z4:'tz4',Z5:'tz5','Z1–Z2':'tz2','Z2–Z3':'tz2','Z3–Z4':'tz4','Z4–Z5':'tz5','Z2–Z4':'tz3'};
+  const cls=m[z]||'tz2';
+  return `<span class="tag ${cls}">${z}</span>`;
+}
+
+// ===================== COUNTDOWN =====================
+function updateCountdown(){
+  const now=new Date(), diff=RACE_DATE-now;
+  if(diff<=0){document.getElementById('cd-days').textContent='比賽日！';return;}
+  const days=Math.floor(diff/86400000);
+  const h=Math.floor((diff%86400000)/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  document.getElementById('cd-days').textContent=days+' 天';
+  document.getElementById('cd-h').textContent=fmt2(h);
+  document.getElementById('cd-m').textContent=fmt2(m);
+  document.getElementById('cd-s').textContent=fmt2(s);
+}
+setInterval(updateCountdown,1000);
+updateCountdown();
+
+// ===================== PHASE + CYCLE UI =====================
+function updatePhaseUI(){
+  const t=today();
+  const phase=getPhase(t);
+  const w=getWeekInCycle(t);
+  const lf=getLoadFactor(w);
+
+  // Phase pills
+  for(let i=1;i<=5;i++){
+    const el=document.getElementById('ph'+i);
+    el.className='pi';
+    if(phase&&phase.id===i)el.classList.add('active');
+    else if(phase&&i<phase.id)el.classList.add('done');
+  }
+  if(!phase){
+    const preEl=document.getElementById('ph1');
+    if(new Date()<new Date('2026-08-01'))preEl.className='pi';
+  }
+
+  // Cycle weeks
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('cw'+i);
+    el.className='cw'+(i===4?' rec':'')+(i===w?' cur':'');
+  }
+
+  // Load badge
+  const badge=document.getElementById('load-badge');
+  badge.textContent=LOAD_LABEL[w-1];
+  badge.className='load-badge'+(w===4?' rec':'');
+
+  // Cycle info
+  const ci=document.getElementById('cycle-info');
+  if(w===4){
+    ci.textContent='本週為恢復週：訓練量減少30%，讓身體超補償';
+    ci.style.color='#92400e';
+  } else {
+    const next4=new Date();next4.setDate(next4.getDate()+(4-w)*7-(next4.getDay()+6)%7);
+    ci.textContent=`距離恢復週 W4：${(4-w)} 週後`;
+    ci.style.color='var(--muted)';
+  }
+}
+updatePhaseUI();
+
+// ===================== TODAY'S TRAINING =====================
+function renderToday(){
+  const t=today();
+  const phase=getPhase(t);
+  const w=getWeekInCycle(t);
+  const lf=getLoadFactor(w);
+  const wd=getWeekday(t);
+  const container=document.getElementById('today-content');
+
+  // Date header
+  const dn=['週一','週二','週三','週四','週五','週六','週日'];
+  let html=`<div style="font-size:13px;color:var(--muted);margin-bottom:8px">${t} · ${dn[wd]}</div>`;
+
+  if(!phase){
+    const to=new Date('2026-08-01');
+    const diff=Math.ceil((to-new Date())/86400000);
+    html+=`<div class="card"><div class="rest-day"><div class="rest-icon">🗓️</div><div class="rest-text">訓練計畫尚未開始</div><div class="rest-sub">距離 8月1日還有 ${diff} 天</div></div></div>`;
+    container.innerHTML=html; return;
+  }
+
+  if(w===4){
+    html+=`<div class="load-note">🔵 本週為恢復週（W4）：課表強度不變，但每課時間縮短 30%。請充分休息讓身體超補償！</div>`;
+  }
+
+  const sched=SCH[phase.id];
+  if(!sched){container.innerHTML=html+'<div class="card"><div class="rest-day"><div class="rest-icon">❓</div><div class="rest-text">課表待確認</div></div></div>';return;}
+
+  const day=sched[wd];
+
+  if(day===null||day===undefined){
+    // Rest day
+    html+=`<div class="card"><div class="rest-day"><div class="rest-icon">🛌</div><div class="rest-text">今天是休息日</div><div class="rest-sub">主動恢復：泡滾筒、伸展15–20min</div></div></div>`;
+  } else if(day.am||day.pm){
+    // Double session
+    html+=`<div class="card-hd" style="margin-bottom:8px"><div class="card-t">今日課表｜${phase.name}${w===4?' 🔵恢復週':''}</div></div>`;
+    if(day.am) html+=renderSession(day.am,lf,'am');
+    if(day.pm) html+=renderSession(day.pm,lf,'pm');
+    if(wd===0&&day.pm) html+=renderSession(day.pm,lf,'pm'); // just pm
+  } else {
+    // Single session
+    html+=`<div class="card-hd" style="margin-bottom:8px"><div class="card-t">今日課表｜${phase.name}${w===4?' 🔵恢復週':''}</div></div>`;
+    html+=renderSession(day,lf,'single');
+  }
+
+  // Quick log button
+  html+=`<button class="btn btn-pri" style="margin-top:4px" onclick="switchTab(1);setFormDate('${t}')">+ 記錄今日訓練</button>`;
+  container.innerHTML=html;
+}
+
+function renderSession(s,lf,slot){
+  const dur=Math.round(s.d*lf);
+  const slotHtml=slot==='am'?`<span class="sesh-lbl sam">早 05:00</span>`:slot==='pm'?`<span class="sesh-lbl spm">晚 19:00</span>`:'';
+  return `<div class="card tcard ${s.t}" style="margin-bottom:8px">
+    ${slotHtml}
+    <div class="tc-hd"><div class="tc-title">${s.l}</div></div>
+    <div class="tc-meta">
+      ${zoneTag(s.z)}
+      <span class="tag tdur">⏱ ${dur}分鐘</span>
+      <span class="tag thr">❤️ ${s.hr}</span>
+    </div>
+    <div class="tc-desc">${s.desc}</div>
+    <div class="tc-kpi">🎯 ${s.kpi}</div>
+  </div>`;
+}
+renderToday();
+
+// ===================== TABS =====================
+const tabs=document.querySelectorAll('.tab');
+const tcs=document.querySelectorAll('.tc');
+let charts={};
+function switchTab(i){
+  tabs.forEach((t,j)=>{t.className='tab'+(j===i?' on':'')});
+  tcs.forEach((t,j)=>{t.className='tc'+(j===i?' on':'')});
+  if(i===2)renderLogTable();
+  if(i===3){renderAnalysis();setTimeout(()=>{initCharts();},80);}
+}
+
+// ===================== FORM =====================
+document.getElementById('f-date').value=today();
+function setFormDate(d){document.getElementById('f-date').value=d;}
+
+// ===================== GARMIN OCR =====================
+async function handleFile(file){
+  if(!file)return;
+  // Show preview
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const dataUrl=e.target.result;
+    document.getElementById('preview-area').innerHTML=`<img src="${dataUrl}" class="preview-img">`;
+    document.getElementById('ocr-status').innerHTML=`<div class="ocr-loading"><span class="spin"></span>AI 辨識 Garmin 資料中…</div>`;
+
+    // Try OCR via askClaude
+    if(window.cowork&&window.cowork.askClaude){
+      try{
+        const prompt=`這是一張Garmin運動記錄截圖（來自Garmin Connect或Garmin手錶）。請仔細分析圖片中所有可見數字，提取訓練數據，以純JSON格式回傳（不含markdown、不含說明文字）：
+{"activity_type":"游泳 或 騎車 或 跑步 或 磚塊","date":"YYYY-MM-DD","distance":數字，游泳單位公尺，騎跑單位公里,"duration_min":總分鐘數，例如75.5,"avg_hr":平均心率整數或null,"max_hr":最大心率整數或null,"pace_raw":"配速或速度原始文字，如2:45/100m或25.3km/h","calories":卡路里整數或null,"notes":"其他重要資訊"}`;
+        const res=await window.cowork.askClaude(prompt,[dataUrl]);
+        let data=null;
+        try{
+          const cleaned=res.replace(/```[\w]*\n?/g,'').replace(/```\n?/g,'').trim();
+          data=JSON.parse(cleaned);
+        }catch{}
+
+        if(data){
+          document.getElementById('ocr-status').innerHTML=`<div class="ocr-success">✅ AI 辨識成功！請確認下方資料後儲存</div>`;
+          fillForm(data);
+        } else {
+          document.getElementById('ocr-status').innerHTML=`<div class="ocr-fail">⚠️ 辨識失敗，請手動填寫資料</div>`;
+        }
+      }catch(err){
+        document.getElementById('ocr-status').innerHTML=`<div class="ocr-fail">⚠️ AI 暫時無法辨識，請手動填寫</div>`;
+      }
+    } else {
+      document.getElementById('ocr-status').innerHTML=`<div class="ocr-fail">⚠️ AI 功能未啟用，請手動填寫</div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function fillForm(d){
+  if(d.date)document.getElementById('f-date').value=d.date;
+  if(d.activity_type){
+    const m={'游泳':'swim','騎車':'bike','跑步':'run','磚塊':'brick'};
+    const v=Object.entries(m).find(([k])=>d.activity_type.includes(k));
+    if(v)document.getElementById('f-type').value=v[1];
+  }
+  if(d.distance)document.getElementById('f-dist').value=
+    (d.activity_type&&d.activity_type.includes('游'))?`${Math.round(d.distance)}m`:`${d.distance}km`;
+  if(d.duration_min)document.getElementById('f-dur').value=Math.round(d.duration_min);
+  if(d.avg_hr)document.getElementById('f-hr').value=d.avg_hr;
+  if(d.pace_raw)document.getElementById('f-pace').value=d.pace_raw;
+  if(d.calories)document.getElementById('f-cal').value=d.calories;
+  if(d.notes)document.getElementById('f-notes').value=d.notes;
+}
+
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('upload-area').classList.remove('drag');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/'))handleFile(f);
+}
+
+// ===================== SAVE LOG =====================
+function saveLog(){
+  const log={
+    id:Date.now(),
+    date:document.getElementById('f-date').value||today(),
+    type:document.getElementById('f-type').value,
+    session:document.getElementById('f-session').value,
+    dist:document.getElementById('f-dist').value,
+    dur:parseFloat(document.getElementById('f-dur').value)||0,
+    hr:parseInt(document.getElementById('f-hr').value)||null,
+    pace:document.getElementById('f-pace').value,
+    cal:parseInt(document.getElementById('f-cal').value)||null,
+    t1:parseInt(document.getElementById('f-t1').value)||null,
+    t2:parseInt(document.getElementById('f-t2').value)||null,
+    notes:document.getElementById('f-notes').value,
+  };
+  if(!log.date||!log.type){showToast('請填寫日期與項目');return;}
+  const logs=loadLogs();
+  logs.unshift(log);
+  saveLogs(logs);
+  // Reset form
+  document.getElementById('f-dist').value='';
+  document.getElementById('f-dur').value='';
+  document.getElementById('f-hr').value='';
+  document.getElementById('f-pace').value='';
+  document.getElementById('f-cal').value='';
+  document.getElementById('f-t1').value='';
+  document.getElementById('f-t2').value='';
+  document.getElementById('f-notes').value='';
+  document.getElementById('preview-area').innerHTML='';
+  document.getElementById('ocr-status').innerHTML='';
+  document.getElementById('f-date').value=today();
+  showToast('✅ 訓練已儲存！');
+}
+
+// ===================== LOG TABLE =====================
+let activeFilter='all';
+function setFilter(f,el){
+  activeFilter=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderLogTable();
+}
+
+function renderLogTable(){
+  let logs=loadLogs();
+  if(activeFilter!=='all')logs=logs.filter(l=>l.type===activeFilter);
+  const w=document.getElementById('log-table-wrap');
+  if(!logs.length){
+    w.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-txt">尚無訓練紀錄</div><div class="empty-sub">記錄第一次訓練後出現在這裡</div></div>`;
+    return;
+  }
+  const tMap={swim:['🏊','ts','游泳'],bike:['🚴','tb','騎車'],run:['🏃','tr','跑步'],brick:['🔀','tbr','磚塊']};
+  const rows=logs.map(l=>{
+    const ti=tMap[l.type]||['?','ts',l.type];
+    const hrZone=l.hr?getZone(l.hr):'—';
+    return `<tr>
+      <td><span class="tbadge ${ti[1]}">${ti[0]} ${ti[2]}</span></td>
+      <td>${l.date}</td>
+      <td style="font-weight:700">${l.dist||'—'}</td>
+      <td>${l.dur?l.dur+'min':'—'}</td>
+      <td>${l.hr?l.hr+' <span style="font-size:10px;color:var(--muted)">('+hrZone+')</span>':'—'}</td>
+      <td>${l.pace||'—'}</td>
+      <td><button class="btn btn-sm btn-del" onclick="deleteLog(${l.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+  w.innerHTML=`<div style="overflow-x:auto"><table class="log-tbl"><thead><tr><th>項目</th><th>日期</th><th>距離</th><th>時間</th><th>心率</th><th>配速/速度</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function deleteLog(id){
+  if(!confirm('確定刪除此紀錄？'))return;
+  saveLogs(loadLogs().filter(l=>l.id!==id));
+  renderLogTable();
+  showToast('已刪除');
+}
+
+function getZone(hr){
+  if(hr<138)return 'Z1';
+  if(hr<158)return 'Z2';
+  if(hr<172)return 'Z3';
+  if(hr<187)return 'Z4';
+  if(hr<200)return 'Z5';
+  return 'Z6';
+}
+
+// ===================== ANALYSIS =====================
+function renderAnalysis(){
+  const logs=loadLogs();
+  // Count by type
+  const ct={swim:0,bike:0,run:0,brick:0};
+  logs.forEach(l=>{if(ct[l.type]!==undefined)ct[l.type]++;});
+  document.getElementById('m-swim').textContent=ct.swim;
+  document.getElementById('m-bike').textContent=ct.bike;
+  document.getElementById('m-run').textContent=ct.run;
+  document.getElementById('m-total').textContent=logs.length;
+
+  // Transition times
+  const t1s=logs.filter(l=>l.t1).map(l=>l.t1);
+  const t2s=logs.filter(l=>l.t2).map(l=>l.t2);
+  function fmtSec(s){return Math.floor(s/60)+':'+fmt2(s%60)}
+  if(t1s.length){
+    document.getElementById('t1-latest').textContent=fmtSec(t1s[0]);
+    document.getElementById('t1-best').textContent='最佳 '+fmtSec(Math.min(...t1s));
+  }
+  if(t2s.length){
+    document.getElementById('t2-latest').textContent=fmtSec(t2s[0]);
+    document.getElementById('t2-best').textContent='最佳 '+fmtSec(Math.min(...t2s));
+  }
+
+  // Gap analysis
+  renderGapAnalysis(logs);
+}
+
+function renderGapAnalysis(logs){
+  // Parse latest performance metrics from logs
+  const swimLogs=logs.filter(l=>l.type==='swim'&&l.pace).slice(0,5);
+  const bikeLogs=logs.filter(l=>l.type==='bike'&&l.pace).slice(0,5);
+  const runLogs=logs.filter(l=>l.type==='run'&&l.pace).slice(0,5);
+
+  function parsePace(p){
+    // Try to parse min/100m from "2:45/100m" or min/km from "6:30/km"
+    if(!p)return null;
+    const m1=p.match(/(\d+):(\d+)/);
+    if(m1)return parseInt(m1[1])+parseInt(m1[2])/60;
+    return null;
+  }
+  function parseSpeed(p){
+    // "25.3km/h" or "25.3"
+    if(!p)return null;
+    const m=p.match(/([\d.]+)/);
+    return m?parseFloat(m[1]):null;
+  }
+
+  const curSwimPace=swimLogs.length?parsePace(swimLogs[0].pace)||BASELINE.swim.pace:BASELINE.swim.pace;
+  const curBikeSpeed=bikeLogs.length?parseSpeed(bikeLogs[0].pace)||BASELINE.bike.speed:BASELINE.bike.speed;
+  const curRunPace=runLogs.length?parsePace(runLogs[0].pace)||BASELINE.run.pace:BASELINE.run.pace;
+
+  const t1s=logs.filter(l=>l.t1).map(l=>l.t1);
+  const t2s=logs.filter(l=>l.t2).map(l=>l.t2);
+  const curT1=t1s.length?Math.min(...t1s)/60:BASELINE.t1/60;
+  const curT2=t2s.length?Math.min(...t2s)/60:BASELINE.t2/60;
+
+  const items=[
+    {
+      metric:'🏊 游泳配速',unit:'min/100m',
+      cur:curSwimPace.toFixed(2),tgt:TARGETS.swim.pace.toFixed(2),
+      pct:Math.round((BASELINE.swim.pace-curSwimPace)/(BASELINE.swim.pace-TARGETS.swim.pace)*100),
+      cls:'pb-swim',lower:true,
+      note:curSwimPace<=TARGETS.swim.pace?'已達標！':'尚差 '+(curSwimPace-TARGETS.swim.pace).toFixed(2)+' min/100m'
+    },
+    {
+      metric:'🚴 騎車均速',unit:'km/h',
+      cur:curBikeSpeed.toFixed(1),tgt:TARGETS.bike.speed.toFixed(1),
+      pct:Math.round((curBikeSpeed-BASELINE.bike.speed)/(TARGETS.bike.speed-BASELINE.bike.speed)*100),
+      cls:'pb-bike',lower:false,
+      note:curBikeSpeed>=TARGETS.bike.speed?'已達標！':'尚差 '+(TARGETS.bike.speed-curBikeSpeed).toFixed(1)+' km/h'
+    },
+    {
+      metric:'🏃 跑步配速',unit:'min/km',
+      cur:curRunPace.toFixed(2),tgt:TARGETS.run.pace.toFixed(2),
+      pct:Math.round((BASELINE.run.pace-curRunPace)/(BASELINE.run.pace-TARGETS.run.pace)*100),
+      cls:'pb-run',lower:true,
+      note:curRunPace<=TARGETS.run.pace?'已達標！':'尚差 '+(curRunPace-TARGETS.run.pace).toFixed(2)+' min/km'
+    },
+    {
+      metric:'⚡ T1+T2換項',unit:'分鐘合計',
+      cur:((curT1+curT2)).toFixed(1),tgt:((TARGETS.t1+TARGETS.t2)/60).toFixed(1),
+      pct:Math.round(((BASELINE.t1+BASELINE.t2)/60-(curT1+curT2))/(((BASELINE.t1+BASELINE.t2)/60)-(TARGETS.t1+TARGETS.t2)/60)*100),
+      cls:'pb-t',lower:true,
+      note:'最大改善潛力！2024合計 '+(BASELINE.t1+BASELINE.t2).toFixed(0)+'秒'
+    }
+  ];
+
+  document.getElementById('gap-grid').innerHTML=items.map(it=>{
+    const pct=Math.max(0,Math.min(100,it.pct||0));
+    const pctCls=pct>=80?'gap-ok':pct>=40?'gap-mid':'gap-ng';
+    return `<div class="gap-row">
+      <div class="gap-hd">
+        <div class="gap-metric">${it.metric}</div>
+        <span class="gap-pct ${pctCls}">${pct}% 完成</span>
+      </div>
+      <div class="gap-vals">
+        <span class="gap-cur">${it.cur}</span>
+        <span class="gap-arr">→</span>
+        <span class="gap-tgt">${it.tgt}</span>
+        <span class="gap-unit">${it.unit}</span>
+      </div>
+      <div class="pb-bg"><div class="pb-fill ${it.cls}" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${it.note}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== CHARTS =====================
+function initCharts(){
+  const logs=loadLogs();
+
+  function parseVal(p,isSpeed){
+    if(!p)return null;
+    const m=p.match(/([\d.]+)/);
+    return m?parseFloat(m[1]):null;
+  }
+
+  // Swim pace chart
+  const swimData=logs.filter(l=>l.type==='swim'&&l.pace&&l.date).slice(0,20).reverse();
+  buildChart('chart-swim',swimData.map(l=>l.date.slice(5)),swimData.map(l=>parseVal(l.pace)),
+    '配速 min/100m','#0ea5e9',TARGETS.swim.pace,'目標 2.4');
+
+  // Bike speed chart
+  const bikeData=logs.filter(l=>l.type==='bike'&&l.pace&&l.date).slice(0,20).reverse();
+  buildChart('chart-bike',bikeData.map(l=>l.date.slice(5)),bikeData.map(l=>parseVal(l.pace)),
+    '速度 km/h','#f97316',TARGETS.bike.speed,'目標 27.5',false);
+
+  // Run pace chart
+  const runData=logs.filter(l=>l.type==='run'&&l.pace&&l.date).slice(0,20).reverse();
+  buildChart('chart-run',runData.map(l=>l.date.slice(5)),runData.map(l=>parseVal(l.pace)),
+    '配速 min/km','#16a34a',TARGETS.run.pace,'目標 6.5');
+
+  // HR distribution
+  const hrLogs=logs.filter(l=>l.hr);
+  const zones={Z1:0,Z2:0,Z3:0,Z4:0,'Z5+':0};
+  hrLogs.forEach(l=>{
+    const z=getZone(l.hr);
+    if(z==='Z5'||z==='Z6')zones['Z5+']++;
+    else if(zones[z]!==undefined)zones[z]++;
+  });
+  buildHRChart('chart-hr',zones);
+}
+
+function buildChart(id,labels,data,ylabel,color,targetVal,targetLabel,lowerBetter=true){
+  const canvas=document.getElementById(id);
+  if(!canvas)return;
+  if(charts[id]){charts[id].destroy();}
+  if(!data.length){
+    const ctx=canvas.getContext('2d');
+    ctx.font='13px sans-serif';ctx.fillStyle='#94a3b8';ctx.textAlign='center';
+    ctx.fillText('尚無訓練數據，記錄後顯示趨勢圖',canvas.width/2,canvas.height/2);
+    return;
+  }
+  const datasets=[{
+    label:ylabel,data,borderColor:color,backgroundColor:color+'22',
+    tension:.3,fill:true,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:color
+  }];
+  if(targetVal){
+    datasets.push({
+      label:targetLabel,data:labels.map(()=>targetVal),
+      borderColor:'#dc2626',borderDash:[5,4],pointRadius:0,borderWidth:1.5,
+      backgroundColor:'transparent'
+    });
+  }
+  charts[id]=new Chart(canvas.getContext('2d'),{
+    type:'line',data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:20}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y}`}}},
+      scales:{
+        y:{ticks:{font:{size:10}},grid:{color:'#f1f5f9'},
+           reverse:lowerBetter&&true},
+        x:{ticks:{font:{size:10}},grid:{display:false}}
+      }
+    }
+  });
+}
+
+function buildHRChart(id,zones){
+  const canvas=document.getElementById(id);
+  if(!canvas)return;
+  if(charts[id]){charts[id].destroy();}
+  const total=Object.values(zones).reduce((a,b)=>a+b,0);
+  if(!total){
+    const ctx=canvas.getContext('2d');
+    ctx.font='13px sans-serif';ctx.fillStyle='#94a3b8';ctx.textAlign='center';
+    ctx.fillText('尚無心率數據',canvas.width/2,canvas.height/2);
+    return;
+  }
+  charts[id]=new Chart(canvas.getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:Object.keys(zones).map(k=>`${k} (${zones[k]}次)`),
+      datasets:[{data:Object.values(zones),
+        backgroundColor:['#e2e8f0','#86efac','#fde68a','#fca5a5','#c4b5fd'],
+        borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:14}}}
+    }
+  });
+}
+
+// ===================== TOAST =====================
+function showToast(msg){
+  const t=document.createElement('div');
+  t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+// Init log table
+renderLogTable();
+</script>
+</body>
+</html>
